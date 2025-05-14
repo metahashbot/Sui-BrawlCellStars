@@ -30,33 +30,6 @@ SUI Battle Arena 是一款基于 SUI 区块链的 AI 对战游戏。玩家可以
 *   **图标**: [Lucide React](https://lucide.dev/)
 *   **路由**: [React Router DOM](https://reactrouter.com/)
 
-## 📁 项目结构
-project/
-├── .gitignore
-├── index.html
-├── package.json
-├── vite.config.ts
-├── tsconfig.json
-├── tailwind.config.js
-├── postcss.config.js
-├── src/
-│   ├── App.tsx             # 应用主组件
-│   ├── main.tsx            # 应用入口文件
-│   ├── index.css           # 全局样式 (Tailwind)
-│   ├── vite-env.d.ts       # Vite 环境变量类型定义
-│   ├── components/         # UI 组件
-│   │   ├── GamePreview.tsx   # 游戏预览画布
-│   │   └── ReviveModal.tsx   # 复活弹窗组件
-│   ├── context/            # React Context
-│   │   ├── WalletContext.tsx # 钱包状态管理
-│   │   ├── BettingContext.tsx# 投注状态管理 (概念)
-│   │   └── GameContext.tsx   # 游戏状态管理 (概念)
-│   ├── pages/              # 页面组件
-│   │   ├── BettingPage.tsx # 投注页面
-│   │   └── GamePage.tsx    # 游戏主页面
-│   └── config/             # 配置文件 (例如网络配置)
-└── README.md
-
 
 ## 🚀 快速开始
 

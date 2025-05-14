@@ -1,9 +1,10 @@
 import React, { createContext, useContext } from 'react';
 import { useCurrentAccount, useConnectWallet, useDisconnectWallet } from '@mysten/dapp-kit';
-import { useSuiClientQuery } from '@mysten/dapp-kit';
+import { useSuiClient } from '@mysten/dapp-kit';
 import { useWallets } from '@mysten/dapp-kit';
+import { useState, useEffect } from 'react';
 
-// 钱包上下文类型
+// Wallet context type
 export type WalletContextType = {
   walletConnected: boolean;
   connecting: boolean;
@@ -25,40 +26,73 @@ const initialState: WalletContextType = {
 const WalletContext = createContext<WalletContextType>(initialState);
 
 export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // 获取当前账户
+  // Get current account
   const account = useCurrentAccount();
-  // 钱包连接 hook
+  // Wallet connection hook
   const { mutateAsync: connect, isPending: connecting } = useConnectWallet();
-  // 钱包断开 hook
+  // Wallet disconnection hook
   const { mutate: disconnect } = useDisconnectWallet();
+  // Get SUI client
+  const suiClient = useSuiClient();
+  // State management
+  const [balance, setBalance] = useState(0);
 
-  // 查询余额
-  const { data: coins } = useSuiClientQuery(
-    'getAllCoins',
-    {
-      owner: account?.address || '',
-    },
-    {
-      enabled: !!account?.address,
-    }
-  );
+  // Get wallet balance
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (account?.address) {
+        try {
+          const { totalBalance } = await suiClient.getBalance({
+            owner: account.address,
+            coinType: "0x2::sui::SUI", // Using string constant instead of SUI_TYPE_ARG
+          });
+          
+          // Convert to SUI units (1 SUI = 10^9 MIST)
+          setBalance(Number(totalBalance) / 1e9);
+        } catch (error) {
+          console.error('Failed to fetch balance:', error);
+          setBalance(0);
+        }
+      } else {
+        setBalance(0);
+      }
+    };
 
-  // 计算 SUI 余额（单位转换）
-  const balance = coins?.data?.reduce((sum: number, coin: any) => sum + Number(coin.balance) / 1e9, 0) || 0;
+    fetchBalance();
+    
+    // Set interval to refresh balance
+    const intervalId = setInterval(fetchBalance, 10000); // Refresh every 10 seconds
+    
+    return () => clearInterval(intervalId);
+  }, [account, suiClient]);
+
   const wallets = useWallets();
 
-  // 连接钱包
+  // Connect wallet
   const connectWallet = async () => {
-    const wallet = wallets[0];
-    if (!wallet) {
-      alert('未检测到 Sui 钱包插件，请先安装钱包。');
-      return;
+    try {
+      const wallet = wallets[0];
+      if (!wallet) {
+        alert('No Sui wallet detected. Please install a wallet extension first.');
+        return;
+      }
+      console.log('Connecting wallet:', wallet.name);
+      await connect({ wallet });
+      console.log('Wallet connected successfully');
+    } catch (error) {
+      console.error('Failed to connect wallet:', error);
+      alert('Failed to connect wallet. Please try again.');
     }
-    await connect({ wallet });
   };
-  // 断开钱包
+  
+  // Disconnect wallet
   const disconnectWallet = () => {
-    disconnect();
+    try {
+      disconnect();
+      console.log('Wallet disconnected');
+    } catch (error) {
+      console.error('Failed to disconnect wallet:', error);
+    }
   };
 
   return (

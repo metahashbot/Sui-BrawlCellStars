@@ -7,14 +7,24 @@ interface ConnectWalletModalProps {
 }
 
 const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({ onClose }) => {
-  const { connectWallet } = useWallet();
+  const { connectWallet, connecting: walletConnecting } = useWallet();
   const [connecting, setConnecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const handleConnect = async () => {
-    setConnecting(true);
-    await connectWallet();
-    setConnecting(false);
-    onClose();
+    try {
+      setError(null);
+      setConnecting(true);
+      console.log('Starting wallet connection');
+      await connectWallet();
+      console.log('Wallet connected successfully, closing modal');
+      setConnecting(false);
+      onClose();
+    } catch (err) {
+      console.error('Failed to connect wallet:', err);
+      setError('Failed to connect wallet. Please ensure you have a SUI wallet installed and refresh the page to try again.');
+      setConnecting(false);
+    }
   };
   
   return (
@@ -44,21 +54,27 @@ const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({ onClose }) => {
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-5 h-5 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center text-xs">✓</span>
-                Minimum balance of 0.5 SUI for gameplay
+                Minimum 0.5 SUI balance required for gameplay
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-5 h-5 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center text-xs">✓</span>
-                Transaction approval for placing bets
+                Transaction approval required for betting
               </li>
             </ul>
           </div>
           
+          {error && (
+            <div className="bg-red-500/20 text-red-400 p-3 rounded-lg mb-4 text-sm">
+              {error}
+            </div>
+          )}
+          
           <button
             onClick={handleConnect}
-            disabled={connecting}
-            className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg font-medium flex items-center justify-center gap-2 hover:opacity-90 transition-all"
+            disabled={connecting || walletConnecting}
+            className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg font-medium flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-70"
           >
-            {connecting ? (
+            {connecting || walletConnecting ? (
               <>
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 Connecting...

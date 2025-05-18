@@ -92,5 +92,5 @@ SUI Battle Arena 是一款基于 SUI 区块链的 AI 对战游戏。玩家可以
 *   **AI 行为增强**: 提升 <mcfile name="GamePreview.tsx" path="d:\sui_cli\AI-Battle\project\src\components\GamePreview.tsx"></mcfile> 中 AI 细胞的行为逻辑。
 *   **排行榜**: 实现基于玩家表现的排行榜系统。
 *   **NFT 集成**: 引入 NFT 作为游戏内资产或角色。
-
+*   **更丰富的游戏模式**: 探索并添加新的游戏玩法和挑战。 
 

@@ -25,7 +25,7 @@ const HomePage: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      
+
       <main className="flex-grow py-8 px-4 md:px-8">
         <div className="max-w-7xl mx-auto">
           <section className="mb-16">
@@ -139,9 +139,11 @@ const HomePage: React.FC = () => {
       
       <Footer />
       
-      {showWalletModal && (
-        <ConnectWalletModal onClose={() => setShowWalletModal(false)} />
-      )}
+      {/* 修改这里，将 showWalletModal 状态作为 show 属性传递 */}
+      <ConnectWalletModal
+        show={showWalletModal} // 添加 show 属性
+        onClose={() => setShowWalletModal(false)}
+      />
     </div>
   );
 };

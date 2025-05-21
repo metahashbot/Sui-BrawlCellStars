@@ -72,16 +72,13 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const connectWallet = async () => {
     try {
       const wallet = wallets[0];
-      if (!wallet) {
-        alert('No Sui wallet detected. Please install a wallet extension first.');
-        return;
-      }
       console.log('Connecting wallet:', wallet.name);
       await connect({ wallet });
       console.log('Wallet connected successfully');
     } catch (error) {
-      console.error('Failed to connect wallet:', error);
-      alert('Failed to connect wallet. Please try again.');
+      console.error('Failed to connect wallet in context:', error);
+      // Re-throw the error so the caller (modal) can catch it
+      throw error;
     }
   };
   

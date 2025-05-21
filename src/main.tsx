@@ -17,8 +17,10 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <SuiClientProvider defaultNetwork="testnet" networks={networkConfig}>
-        <DappKitWalletProvider autoConnect> 
-          <AppWalletProvider> 
+        {/* DappKitWalletProvider 提供底层的钱包连接能力 */}
+        <DappKitWalletProvider autoConnect>
+          {/* AppWalletProvider 使用 DappKit 的 hooks 并提供自定义的 Context */}
+          <AppWalletProvider>
             <BrowserRouter basename="/sui-battle-arena">
               <App />
             </BrowserRouter>

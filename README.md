@@ -93,6 +93,3 @@ SUI Battle Arena 是一款基于 SUI 区块链的 AI 对战游戏。玩家可以
 *   **排行榜**: 实现基于玩家表现的排行榜系统。
 *   **NFT 集成**: 引入 NFT 作为游戏内资产或角色。
 *   **更丰富的游戏模式**: 探索并添加新的游戏玩法和挑战。 
-
-把 http://localhost:5173/sui-battle-arena/play 和 http://localhost:5173/sui-battle-arena/betting 页面（根目录的react项目 ） 通过 iframe 连到 http://localhost:3000/ （game目录的原生 js项目）来
-

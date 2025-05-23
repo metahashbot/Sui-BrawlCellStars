@@ -90,7 +90,7 @@ const HomePage: React.FC = () => {
                 <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center mb-4">
                   <Bot size={24} /> {/* 将 Trophy 替换为 Bot */}
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Earn</h3>
+                <h3 className="text-xl font-semibold mb-2">Agent</h3>
                 <p className="text-gray-300">
                 If you’ve got great skills but lack the time to participate in matches, why not mint an AI Agent to play on your behalf? Not only can it compete for you, but it will also improve over time through learning. High-performing AI Agents can even be listed for sale or rental on the NFT marketplace, earning you additional income.
                 </p>

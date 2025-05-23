@@ -51,7 +51,7 @@ const MintAgentSection: React.FC<MintAgentSectionProps> = ({
         return;
     }
 
-    const mintCost = 0.5; // 假设铸造需要 0.5 SUI，请根据你的合约逻辑调整
+    const mintCost = 0.1; // 假设铸造需要 0.1 SUI，请根据你的合约逻辑调整
     // 注意：你的 Move 合约 mint_agar 函数目前没有处理 SUI 支付。
     // 如果需要支付，你需要在 Move 合约中添加支付逻辑，并在前端构建交易时包含支付。
     // 目前前端的余额检查仅是客户端提示，不影响链上交易执行（除非合约本身检查支付）。
@@ -117,7 +117,7 @@ const MintAgentSection: React.FC<MintAgentSectionProps> = ({
     }
   };
 
-  const mintCost = 0.5; // 假设铸造需要 0.5 SUI
+  const mintCost = 0.1; // 假设铸造需要 0.1 SUI
   const isMintButtonDisabled = !walletConnected || balance < mintCost || !contractVerified || isMinting || !author || !title || !category || !story;
 
   return (

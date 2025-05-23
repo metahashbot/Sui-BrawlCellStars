@@ -1,21 +1,20 @@
 {
-    "build": {
-        "env": {
-            "VITE_GAME_SERVER_URL": "@vite_game_server_url"
-        }
-    },
-    "functions": {
-        "src/pages/*.tsx": {
-            "runtime": "@vercel/static"
-        }
-    },
     "routes": [
+        {
+            "src": "/assets/(.*)",
+            "headers": {
+                "cache-control": "s-maxage=31536000,immutable"
+            }
+        },
+        {
+            "src": "/(.*\\.(js|css|ico|png|jpg|jpeg|gif|svg|woff|woff2))",
+            "headers": {
+                "cache-control": "s-maxage=31536000,immutable"
+            }
+        },
         {
             "src": "/(.*)",
             "dest": "/index.html"
         }
-    ],
-    "env": {
-        "VITE_GAME_SERVER_URL": "https://sui-battle-arena-production.up.railway.app"
-    }
+    ]
 }

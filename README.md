@@ -1,20 +1,21 @@
 # SUI Brawl CellStars
 
-Sui-Brawl CellStars/    
-├── src/                      # Frontend source code directory  
-│   ├── components/           # React components  
-│   ├── context/              # React Context state management  
-│   ├── pages/                # Page components    
-│   ├── config/               # Configuration files    
-│   ├── App.tsx               # Main application component    
-│   ├── main.tsx              # Application entry point  
-│   └── index.cs              # Style files    
-├── contracts/                # Smart contracts    
-├── game/                     # Game engine submodule    
-│   ├── server/               # Game engine server-side  
-│   ├── client/               # Game engine client-side    
-│   └── agent/                # Agent and model related files    
-├── dist/                     # Build output directory   
+# Sui-Brawl CellStars/ 
+
+* ├── src/                      # Frontend source code directory  
+* │   ├── components/           # React components  
+* │   ├── context/              # React Context state management  
+* │   ├── pages/                # Page components    
+* │   ├── config/               # Configuration files    
+* │   ├── App.tsx               # Main application component    
+* │   ├── main.tsx              # Application entry point  
+* │   └── index.cs              # Style files    
+* ├── contracts/                # Smart contracts    
+* ├── game/                     # Game engine submodule    
+* │   ├── server/               # Game engine server-side  
+* │   ├── client/               # Game engine client-side    
+* │   └── agent/                # Agent and model related files    
+* ├── dist/                     # Build output directory   
 
 
 

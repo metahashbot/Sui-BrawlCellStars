@@ -36,7 +36,7 @@ const Header: React.FC<HeaderProps> = ({ minimal = false }) => {
               SUI Battle Arena
             </span>
           </Link>
-          
+
           <div className="flex items-center gap-2">
             {walletConnected ? (
               <div className="flex items-center">

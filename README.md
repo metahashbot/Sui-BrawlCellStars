@@ -1,7 +1,5 @@
 # SUI Brawl CellStars
 
-# Sui-Brawl CellStars/ 
-
 * ├── src/                      # Frontend source code directory  
 * │   ├── components/           # React components  
 * │   ├── context/              # React Context state management  

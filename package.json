@@ -3,7 +3,6 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "homepage": "https://Joe-Goldbug.github.io/sui-battle-arena",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

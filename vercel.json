@@ -1,0 +1,20 @@
+{
+    "routes": [
+        {
+            "src": "/assets/(.*)",
+            "headers": {
+                "cache-control": "s-maxage=31536000,immutable"
+            }
+        },
+        {
+            "src": "/(.*\\.(js|css|ico|png|jpg|jpeg|gif|svg|woff|woff2))",
+            "headers": {
+                "cache-control": "s-maxage=31536000,immutable"
+            }
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/index.html"
+        }
+    ]
+}

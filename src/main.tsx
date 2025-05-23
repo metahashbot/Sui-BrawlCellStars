@@ -21,7 +21,7 @@ createRoot(document.getElementById('root')!).render(
         <DappKitWalletProvider autoConnect>
           {/* AppWalletProvider 使用 DappKit 的 hooks 并提供自定义的 Context */}
           <AppWalletProvider>
-            <BrowserRouter basename="/sui-battle-arena">
+            <BrowserRouter>
               <App />
             </BrowserRouter>
           </AppWalletProvider>

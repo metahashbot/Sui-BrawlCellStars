@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import Header from '../components/Header';
 import { useNavigate } from 'react-router-dom';
+import { gameConfig } from '../config/gameConfig';
 
 const BettingPage: React.FC = () => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -33,7 +34,7 @@ const BettingPage: React.FC = () => {
       <div className="flex-grow flex items-center justify-center">
         <iframe
           ref={iframeRef}
-          src="http://localhost:3000/?mode=betting"
+          src={gameConfig.getGameUrl('betting')}
           title="Game Arena"
           width="100%"
           height="100%"

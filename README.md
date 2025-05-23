@@ -1,4 +1,4 @@
-# SUI Battle Arena
+# SUI Brawl CellStars
 
 SUI Battle Arena 是一款基于 SUI 区块链的 AI 对战游戏。玩家可以连接自己的 SUI 钱包，参与游戏，并体验基于区块链技术的独特游戏机制。
 

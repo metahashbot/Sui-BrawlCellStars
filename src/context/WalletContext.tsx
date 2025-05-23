@@ -1,8 +1,15 @@
 import React, { createContext, useContext } from 'react';
-import { useCurrentAccount, useConnectWallet, useDisconnectWallet } from '@mysten/dapp-kit';
+import {
+  useCurrentAccount,
+  useConnectWallet,
+  useDisconnectWallet,
+  useSignAndExecuteTransaction, 
+} from '@mysten/dapp-kit';
 import { useSuiClient } from '@mysten/dapp-kit';
 import { useWallets } from '@mysten/dapp-kit';
 import { useState, useEffect } from 'react';
+import { SuiTransactionBlock } from '@mysten/sui.js/client';
+import { SuiClient } from '@mysten/sui/client'; // 尝试从 @mysten/sui 导入 SuiClient
 
 // Wallet context type
 export type WalletContextType = {
@@ -12,6 +19,10 @@ export type WalletContextType = {
   balance: number;
   connectWallet: () => Promise<void>;
   disconnectWallet: () => void;
+  address: string | null;
+  // 将属性名从 signAndExecuteTransaction 更改为 signAndExecuteTransactionBlock
+  signAndExecuteTransactionBlock: ((txb: SuiTransactionBlock) => Promise<any>) | undefined;
+  suiClient: SuiClient | undefined; // 添加 suiClient 类型
 };
 
 const initialState: WalletContextType = {
@@ -21,6 +32,10 @@ const initialState: WalletContextType = {
   balance: 0,
   connectWallet: async () => {},
   disconnectWallet: () => {},
+  address: null, // 添加 address 初始值
+  // 将属性名从 signAndExecuteTransaction 更改为 signAndExecuteTransactionBlock
+  signAndExecuteTransactionBlock: undefined, // 添加 signAndExecuteTransaction初始值
+  suiClient: undefined, // 添加 suiClient 初始值
 };
 
 const WalletContext = createContext<WalletContextType>(initialState);
@@ -34,6 +49,9 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const { mutate: disconnect } = useDisconnectWallet();
   // Get SUI client
   const suiClient = useSuiClient();
+  // Get signAndExecuteTransaction hook
+  // 这里获取的 hook 名称是 mutateAsync，我们将其别名为 signAndExecuteTransactionBlock
+  const { mutateAsync: signAndExecuteTransactionBlock } = useSignAndExecuteTransaction();
   // State management
   const [balance, setBalance] = useState(0);
 
@@ -101,6 +119,10 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         balance,
         connectWallet,
         disconnectWallet,
+        address: account?.address || null, // 提供 address
+        // 提供 signAndExecuteTransactionBlock
+        signAndExecuteTransactionBlock: signAndExecuteTransactionBlock as any,
+        suiClient: suiClient as SuiClient, // 提供 suiClient 并断言类型以解决类型错误
       }}
     >
       {children}

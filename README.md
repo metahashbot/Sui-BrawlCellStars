@@ -1,5 +1,24 @@
 # SUI Brawl CellStars
 
+Sui-Brawl CellStars/    
+├── src/                      # Frontend source code directory  
+│   ├── components/           # React components  
+│   ├── context/              # React Context state management  
+│   ├── pages/                # Page components    
+│   ├── config/               # Configuration files    
+│   ├── App.tsx               # Main application component    
+│   ├── main.tsx              # Application entry point  
+│   └── index.cs              # Style files    
+├── contracts/                # Smart contracts    
+├── game/                     # Game engine submodule    
+│   ├── server/               # Game engine server-side  
+│   ├── client/               # Game engine client-side    
+│   └── agent/                # Agent and model related files    
+├── dist/                     # Build output directory   
+
+
+
+
 SUI Brawl CellStars 是一款基于 SUI 区块链的 AI 对战游戏。玩家可以连接自己的 SUI 钱包，参与游戏，并体验基于区块链技术的独特游戏机制。
 
 ## ✨ 功能特性

@@ -138,7 +138,7 @@ const MarketplacePage: React.FC = () => {
 
         // 签名并执行交易
         // 注意：这里使用 signAndExecuteTransaction，因为它会修改链上状态（可能创建 Kiosk）
-        // 如果你只想查询 Kiosk ID 而不创建，需要使用 suiClient.getOwnedObjects 查找 Kiosk 和 KioskOwnerCap
+        // 如果只想查询 Kiosk ID 而不创建，需要使用 suiClient.getOwnedObjects 查找 Kiosk 和 KioskOwnerCap
         // 这里的实现是“获取或创建”，所以需要交易
         // 使用 useSignAndExecuteTransaction hook 来执行交易
         // 注意：useSignAndExecuteTransaction 是一个 hook，不能直接在 useEffect 中 await 调用 mutate 函数

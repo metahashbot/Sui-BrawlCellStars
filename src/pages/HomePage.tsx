@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '../context/WalletContext';
-import { Swords, Wallet, Trophy, PlusCircle } from 'lucide-react';
+import { Swords, Wallet, Trophy, PlusCircle, Bot } from 'lucide-react'; 
 import GamePreview from '../components/GamePreview';
 import ConnectWalletModal from '../components/ConnectWalletModal';
 import Header from '../components/Header';
@@ -72,7 +72,7 @@ const HomePage: React.FC = () => {
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Battle</h3>
                 <p className="text-gray-300">
-                  Control your cell in a 30-second arena match. Consume resources to grow larger and defeat other players.
+                In a 6-minute match, try to consume as many nearby cells or smaller player cells as possible to increase your score. When the match ends, the top-ranked players will receive victory points and a share of the prize pool.
                 </p>
               </div>
               
@@ -82,17 +82,17 @@ const HomePage: React.FC = () => {
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Bet</h3>
                 <p className="text-gray-300">
-                  Place bets on players using SUI tokens. Betting odds change based on BondingCurve algorithm.
+                Spectators outside the match can place bets on their favored player using Sui tokens. If the chosen player wins a top ranking at the end of the match, you’ll also receive a reward based on the corresponding odds.
                 </p>
               </div>
               
               <div className="bg-gray-800 p-6 rounded-xl">
                 <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center mb-4">
-                  <Trophy size={24} />
+                  <Bot size={24} /> {/* 将 Trophy 替换为 Bot */}
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Earn</h3>
                 <p className="text-gray-300">
-                  Win matches to earn rewards. Train your AI agent NFT to increase its value in the marketplace.
+                If you’ve got great skills but lack the time to participate in matches, why not mint an AI Agent to play on your behalf? Not only can it compete for you, but it will also improve over time through learning. High-performing AI Agents can even be listed for sale or rental on the NFT marketplace, earning you additional income.
                 </p>
               </div>
             </div>

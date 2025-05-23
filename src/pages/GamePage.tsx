@@ -1,5 +1,6 @@
 import React from 'react';
 import Header from '../components/Header';
+import { gameConfig } from '../config/gameConfig';
 
 const GamePage: React.FC = () => {
   return (
@@ -7,7 +8,7 @@ const GamePage: React.FC = () => {
       <Header minimal />
       <div className="flex-grow flex items-center justify-center">
         <iframe
-          src="http://localhost:3000/?mode=play"
+          src={gameConfig.getGameUrl('play')}
           title="Game Arena"
           width="100%"
           height="100%"

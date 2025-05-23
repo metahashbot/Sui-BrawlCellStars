@@ -33,7 +33,7 @@ const Header: React.FC<HeaderProps> = ({ minimal = false }) => {
         <div className="flex justify-between items-center">
           <Link to="/" className="flex items-center">
             <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
-              SUI Battle Arena
+            Brawl CellStars
             </span>
           </Link>
 
@@ -77,7 +77,7 @@ const Header: React.FC<HeaderProps> = ({ minimal = false }) => {
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
         <Link to="/" className="flex items-center">
           <span className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
-            SUI Battle Arena
+          Brawl CellStars
           </span>
         </Link>
         

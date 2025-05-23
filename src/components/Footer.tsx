@@ -8,7 +8,7 @@ const Footer: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
             <div className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent mb-2">
-              SUI Battle Arena
+            Brawl CellStars
             </div>
             <p className="text-sm text-gray-400">
               AI-powered battle arena game built on SUI blockchain for the 2025 SUI Hackathon
@@ -26,7 +26,7 @@ const Footer: React.FC = () => {
         </div>
         
         <div className="mt-6 pt-6 border-t border-gray-800 text-center text-sm text-gray-500">
-          &copy; {new Date().getFullYear()} SUI Battle Arena. All rights reserved.
+          &copy; {new Date().getFullYear()} Brawl CellStars. All rights reserved.
         </div>
       </div>
     </footer>

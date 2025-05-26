@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '../context/WalletContext';
-import { Swords, Wallet, Trophy, PlusCircle, Bot } from 'lucide-react'; 
-import GamePreview from '../components/GamePreview';
+import { Swords, Wallet, Trophy, PlusCircle, Bot } from 'lucide-react'; import GamePreview from '../components/GamePreview';
 import ConnectWalletModal from '../components/ConnectWalletModal';
 import Header from '../components/Header';
 import Footer from '../components/Footer';

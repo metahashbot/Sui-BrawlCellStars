@@ -1,9 +1,7 @@
-// 从 @mysten/sui.js/transactions 导入 TransactionBlock 类
 import { TransactionBlock } from '@mysten/sui.js/transactions';
-// 假设 ../config/sui 存在并导出了 SUI_CLIENT
 import { SUI_CLIENT } from '../config/sui';
 
-const PACKAGE_ID = '0x6994f20653f263d5bc01180e460e0e18ae2b6ecd7777dd86c205c62abea71b09';
+const PACKAGE_ID = import.meta.env.VITE_Betting_CONTRACT_PACKAGE_ID;
 
 /**
  * 玩家下注
@@ -46,7 +44,7 @@ export async function placeBetOnContract(
 }
 
 /**
- * 创建游戏
+ * 创建游戏e
  * @param coinObjectId SUI 代币对象ID，用于初始化资金池
  * @param signAndExecuteTransactionBlock 来自钱包的签名函数
  */
@@ -63,9 +61,22 @@ export async function createGameOnContract(
   });
 
   try {
+    // --- MODIFICATION START ---
+    console.log('createGameOnContract: Attempting to sign and execute transaction block.');
+    // 可选：如果需要，可以打印 txb 对象，但它可能很大
+    // console.log('createGameOnContract: TransactionBlock object:', txb);
+    console.log('createGameOnContract: Using coinObjectId:', coinObjectId);
+    console.log('createGameOnContract: Using packageId:', PACKAGE_ID);
+    // --- MODIFICATION END ---
+
     const result = await signAndExecuteTransactionBlock(txb);
+
+    // --- MODIFICATION START ---
+    console.log('createGameOnContract: signAndExecuteTransactionBlock returned:', result);
+    // --- MODIFICATION END ---
+
     console.log('创建游戏交易已提交:', result.digest);
-    
+
     // 等待交易确认并获取游戏ID
     const txDetails = await SUI_CLIENT.waitForTransaction({
       digest: result.digest,
@@ -84,6 +95,10 @@ export async function createGameOnContract(
     }
   } catch (error) {
     console.error('创建游戏失败:', error);
+    // --- MODIFICATION START ---
+    // 打印完整的错误对象，以便查看更多细节
+    console.error('创建游戏失败详情:', error);
+    // --- MODIFICATION END ---
     return { success: false, error };
   }
 }
@@ -133,33 +148,67 @@ export async function endGameOnContract(
  */
 export async function getOddsFromContract(gameId: string, playerId: number): Promise<number | null> {
   try {
-    // 注意：devInspectTransactionBlock 的参数结构可能因 SDK 版本而异
-    // 请参考您使用的 @mysten/sui.js 版本的文档
-    // 以下是一个示例结构，可能需要调整
-    const result = await SUI_CLIENT.devInspectTransactionBlock({
-      sender: '0x0000000000000000000000000000000000000000000000000000000000000000', // 任意发送者地址，因为是只读
-      transactionBlock: {
-        // @ts-ignore // devInspectTransactionBlock 的类型可能不完全匹配 TransactionBlock
-        kind: 'MoveCall', // 这部分可能需要根据SDK版本调整为 TransactionBlock 格式
-        data: {
-            packageObjectId: PACKAGE_ID,
-            module: 'betting',
-            function: 'get_odds',
-            typeArguments: [],
-            arguments: [gameId, playerId.toString()], // 确保参数类型匹配合约
-        }
-      }
+    const txb = new TransactionBlock();
+    txb.moveCall({
+      target: `${PACKAGE_ID}::betting::get_odds`,
+      arguments: [
+        txb.object(gameId), // gameId is an object ID
+        txb.pure(playerId, 'u8'), // playerId is u8 in the contract
+      ],
     });
-    // @ts-ignore
+
+    const result = await SUI_CLIENT.devInspectTransactionBlock({
+      sender: '0x0000000000000000000000000000000000000000000000000000000000000000', // Dummy sender for read-only calls
+      transactionBlock: await txb.build(),
+    });
+
     if (result.effects && result.effects.status.status === 'success' && result.results && result.results[0]?.returnValues?.[0]?.[0]) {
-       // @ts-ignore
-      const returnValue = result.results[0].returnValues[0][0];
-      return Number(returnValue) / 1_000_000; // 转换为小数形式
+      const returnValueBytes = result.results[0].returnValues[0][0];
+      // Assuming the return value is u64, convert bytes to number
+      // The actual conversion might depend on how the SDK returns u64 from devInspect
+      // For u64, it's often returned as a string or a BigInt, then needs parsing.
+      // Let's assume it's a string representing a number for now.
+      const oddsValue = BigInt(new Uint8Array(returnValueBytes).reduce((str, byte, i) => str + byte * (256**i), 0)).toString();
+      return Number(oddsValue) / 1_000_000; // 转换为小数形式
     }
     console.error('查询赔率失败:', result);
     return null;
   } catch (error) {
     console.error('查询赔率异常:', error);
+    return null;
+  }
+}
+
+/**
+ * 查询资金池总额
+ * @param gameId 游戏对象ID
+ */
+export async function getPoolValueFromContract(gameId: string): Promise<number | null> {
+  try {
+    const txb = new TransactionBlock();
+    txb.moveCall({
+      target: `${PACKAGE_ID}::betting::get_pool_value`,
+      arguments: [
+        txb.object(gameId), // gameId is an object ID
+      ],
+    });
+
+    const result = await SUI_CLIENT.devInspectTransactionBlock({
+      sender: '0x0000000000000000000000000000000000000000000000000000000000000000', // Dummy sender
+      transactionBlock: await txb.build(),
+    });
+
+    if (result.effects && result.effects.status.status === 'success' && result.results && result.results[0]?.returnValues?.[0]?.[0]) {
+      const returnValueBytes = result.results[0].returnValues[0][0];
+      // Similar to getOdds, parse the u64 return value
+      // This is a placeholder, adjust based on actual return format
+      const poolValue = BigInt(new Uint8Array(returnValueBytes).reduce((str, byte, i) => str + byte * (256**i), 0)).toString();
+      return Number(poolValue); // Pool value is likely in MIST, so no division by 1_000_000 unless it represents SUI with decimals
+    }
+    console.error('查询资金池失败:', result);
+    return null;
+  } catch (error) {
+    console.error('查询资金池异常:', error);
     return null;
   }
 }

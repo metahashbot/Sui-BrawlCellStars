@@ -1,139 +1,120 @@
-import React, { useState, useEffect } from 'react'; 
+import React, { useState, useEffect } from 'react';
 import { useBetting } from '../context/BettingContext';
 import { useWallet } from '../context/WalletContext';
-import { useGame } from '../context/GameContext';
+import { useGame } from '../context/GameContext'; // gameState 仍然可以用于显示玩家信息
 import { TrendingUp, CreditCard, ArrowUpRight } from 'lucide-react';
 
+// 移除 BettingPanelProps 和 gameId prop
+// interface BettingPanelProps {
+//   gameId: string;
+// }
+// const BettingPanel: React.FC<BettingPanelProps> = ({ gameId }) => {
 const BettingPanel: React.FC = () => {
-  const { walletConnected, balance } = useWallet();
-  const { gameState } = useGame();
+  const { walletConnected, balance, getPrimaryCoinObjectId } = useWallet(); // 添加 getPrimaryCoinObjectId
+  const { gameState } = useGame(); // gameState 用于显示玩家/AI信息
   const {
     bettingEnabled,
     bettingClosing,
     makeBet,
-    loading,
-    fetchOdds, // 从Context获取 fetchOdds 函数
-    currentGameId, // 从Context获取当前游戏ID
+    loading, // betting context loading state
+    fetchOdds,
+    currentGameId, // 从 BettingContext 获取链上游戏ID
   } = useBetting();
 
-  const [selectedEntityId, setSelectedEntityId] = useState<number | null>(null);
+  const [selectedEntityId, setSelectedEntityId] = useState<number | null>(null); // 对应合约的 player_id (1-8)
   const [betAmount, setBetAmount] = useState<number>(0.1);
-  const [displayedOdds, setDisplayedOdds] = useState<number | null>(null); // 新增状态来存储从合约获取的赔率
+  const [displayedOdds, setDisplayedOdds] = useState<number | null>(null);
 
   // Combine players and AI agents
   const allEntities = [
     ...gameState.players.map(player => ({
       ...player,
       isAI: false,
-      // odds: 1 + (10 / (player.score + 1)), // 移除或注释掉本地计算的赔率
+      // 确保 entity.id 是合约期望的 player_id (1-8)
+      // 如果 gameState.players[n].id 不是 1-8, 你需要在这里映射
+      // 例如，如果 gameState.players 是0索引的，则 id: player.id + 1
     })),
     ...gameState.aiAgents.map(agent => ({
       ...agent,
       isAI: true,
-      // odds: 1 + (10 / (agent.score + 1)), // 移除或注释掉本地计算的赔率
+      // 同上，确保 entity.id 是合约期望的 player_id (1-8)
+      // 假设 AI agent 的 ID 也需要映射到 1-8 范围内不与玩家冲突的 ID
     })),
   ];
+  // 这是一个示例，你需要根据你的 gameState 结构调整 ID 映射
+  // 确保 selectedEntityId 最终是 1-8 范围内的数字
+
 
   // Sort by score descending
   const sortedEntities = allEntities.sort((a, b) => b.score - a.score);
+
 
   // Calculate potential winnings (使用传入的赔率)
   const calculateWinnings = (amount: number, odds: number) => {
     return amount * odds;
   };
 
-  // 当 selectedEntityId 或 currentGameId 变化时，从合约获取赔率
   useEffect(() => {
     const updateOdds = async () => {
-      if (selectedEntityId !== null && currentGameId) {
-        // TODO: 确保 selectedEntityId 映射到合约期望的 1-8 范围
-        // 例如： const contractPlayerId = mapEntityIdToContractPlayerId(selectedEntityId);
-        // 在调用 fetchOdds 之前，可能需要根据您的游戏状态 entity.id 找到对应的合约 player_id
-        // 假设这里的 selectedEntityId 就是合约期望的 player_id (1-8)
-        setDisplayedOdds(null); // 在加载新赔率前清空
-        const odds = await fetchOdds(selectedEntityId); // 调用从合约获取赔率的函数
+      if (selectedEntityId !== null && currentGameId) { // 使用 context 的 currentGameId
+        setDisplayedOdds(null);
+        console.log(`BettingPanel: Fetching odds for player ${selectedEntityId} in chain game ${currentGameId}`);
+        const odds = await fetchOdds(selectedEntityId);
         setDisplayedOdds(odds);
       } else {
-        setDisplayedOdds(null); // 如果没有选择实体或没有游戏ID，则清空赔率
+        setDisplayedOdds(null);
       }
     };
     updateOdds();
-  }, [selectedEntityId, currentGameId, fetchOdds]); // 添加 fetchOdds 到依赖项
+  }, [selectedEntityId, currentGameId, fetchOdds]);
 
   const handleBet = async () => {
-    if (!walletConnected || !selectedEntityId || betAmount <= 0) return;
+    if (!walletConnected || selectedEntityId === null || betAmount <= 0 || !currentGameId) {
+        if (!currentGameId) alert("没有有效的链上游戏ID进行下注。");
+        return;
+    }
 
     if (betAmount > balance) {
-      alert('Insufficient balance for this bet');
+      alert('余额不足以支付此次下注。');
       return;
     }
 
     if (displayedOdds === null) {
-        alert('Waiting for odds to load. Please try again.');
+        alert('正在加载赔率，请稍后再试。');
         return;
     }
 
-    const selectedEntity = allEntities.find(entity => entity.id === selectedEntityId);
-    if (!selectedEntity) return;
-
-    // TODO: 获取一个有效的 coinObjectId 用于下注
-    // 这部分逻辑非常重要，您需要根据您的钱包集成来正确实现
-    // 例如，如果您的 useWallet hook 提供了获取用户 SUI coins 的方法：
-    // const suiCoins = await getSuiCoins(); // 假设 useWallet 提供了这个函数
-    // if (!suiCoins || suiCoins.length === 0) {
-    //   alert('没有可用的SUI代币进行下注');
-    //   return;
-    // }
-    // // 选择一个合适的 coin，例如第一个，或者面额大于下注金额的
-    // // 注意：这里可能需要更复杂的逻辑来处理多个小额币对象
-    // const amountMist = Math.floor(betAmount * 1_000_000_000);
-    // const coinToUse = suiCoins.find(coin => Number(coin.balance) >= amountMist);
-    // if (!coinToUse) {
-    //    alert('没有足够面额的SUI代币进行下注');
-    //    return;
-    // }
-    // const coinObjectIdForBet = coinToUse.coinObjectId;
-
-    // ---- 临时的 coinObjectId，您必须替换它 ----
-    const coinObjectIdForBet = "0xYOUR_COIN_OBJECT_ID_FOR_BETS"; // <--- 替换这里！！！
-    if (coinObjectIdForBet === "0xYOUR_COIN_OBJECT_ID_FOR_BETS") {
-        alert("请在 BettingPanel.tsx 中配置一个有效的 coinObjectIdForBet 来进行测试！");
+    // 获取用于下注的 Coin Object ID
+    const coinObjectIdForBet = await getPrimaryCoinObjectId(); // 从 WalletContext 获取
+    if (!coinObjectIdForBet) {
+        alert("无法获取有效的SUI Coin对象进行下注。请确保钱包中有足够的SUI。");
         return;
     }
-    // ---- 临时的 coinObjectId 结束 ----
+    console.log(`BettingPanel: Attempting to bet on player ${selectedEntityId} with amount ${betAmount} SUI using coin ${coinObjectIdForBet} in chain game ${currentGameId}`);
 
-    // 注意：selectedEntity.id 应该是合约期望的 playerId (1-8)
-    // 如果您的 entity.id 不是这个范围，需要进行映射
-    // 例如： const contractPlayerId = mapEntityIdToContractPlayerId(selectedEntity.id);
-    const result = await makeBet(selectedEntity.id, betAmount, coinObjectIdForBet);
+    // selectedEntityId 应该已经是合约期望的 player_id (1-8)
+    const result = await makeBet(selectedEntityId, betAmount, coinObjectIdForBet);
 
-    // 根据 makeBet 的返回结果提供用户反馈
     if (result?.success) {
         alert(`下注成功！交易摘要: ${result.digest}`);
-        // TODO: 成功后的其他操作，例如刷新余额，清空下注金额等
+        // 可以考虑刷新余额或做其他UI更新
+        setBetAmount(0.1); // 重置下注金额
+        setSelectedEntityId(null); // 清除选择
     } else if (result?.error) {
         alert(`下注失败: ${result.error}`);
-    } else {
-        // makeBet 返回 undefined，通常是因为前置检查失败
-        // 相关的提示已经在 makeBet 内部处理了
     }
+    // 如果 result 是 undefined，通常是前置检查失败，相关 alert 已在 makeBet 或此处处理
   };
 
   if (!bettingEnabled && !bettingClosing) {
     return (
       <div className="h-full flex flex-col">
-        <div className="p-4 border-b border-gray-700 bg-gray-800">
-          <h2 className="flex items-center gap-2 text-lg font-bold">
-            <TrendingUp size={18} className="text-green-400" />
-            Betting
-          </h2>
-        </div>
-
+        {/* ... header ... */}
         <div className="flex-grow flex items-center justify-center p-6">
           <div className="text-center">
-            <div className="text-lg font-medium mb-2">Betting will open soon</div>
+            <div className="text-lg font-medium mb-2">下注即将开放</div>
             <p className="text-gray-400">
-              Once the match progresses, you'll be able to place bets on players.
+              比赛开始后即可下注。
             </p>
           </div>
         </div>
@@ -141,29 +122,34 @@ const BettingPanel: React.FC = () => {
     );
   }
 
+
   return (
     <div className="h-full flex flex-col">
+      {/* ... header ... */}
       <div className="p-4 border-b border-gray-700 bg-gray-800">
-        <h2 className="flex items-center gap-2 text-lg font-bold">
-          <TrendingUp size={18} className="text-green-400" />
-          Betting {bettingClosing && <span className="text-sm text-red-400 ml-2">Closing Soon</span>}
-        </h2>
+          <h2 className="flex items-center gap-2 text-lg font-bold">
+            <TrendingUp size={18} className="text-green-400" />
+            下注面板 (游戏ID: {currentGameId ? currentGameId.slice(0, 6) + "..." : "N/A"})
+            {bettingClosing && <span className="text-sm text-red-400 ml-2">即将关闭</span>}
+          </h2>
       </div>
 
       <div className="flex-grow overflow-y-auto p-4">
+        {/* ... player selection ... */}
         <div className="mb-4">
-          <h3 className="text-sm font-medium text-gray-300 mb-2">Select Player to Bet On</h3>
+          <h3 className="text-sm font-medium text-gray-300 mb-2">选择下注对象</h3>
           <div className="grid grid-cols-1 gap-2">
-            {sortedEntities.slice(0, 5).map((entity) => (
+            {sortedEntities.slice(0, 8).map((entity) => ( // 显示最多8个实体
               <button
-                key={entity.id}
+                key={entity.id} // 确保 entity.id 是唯一的
                 className={`p-3 rounded border ${
-                  selectedEntityId === entity.id
+                  selectedEntityId === entity.id // entity.id 应该是合约的 player_id
                     ? 'bg-purple-900/40 border-purple-500'
                     : 'bg-gray-800 border-gray-700 hover:border-gray-600'
                 }`}
-                onClick={() => setSelectedEntityId(entity.id)}
+                onClick={() => setSelectedEntityId(entity.id)} // 设置合约的 player_id
               >
+                {/* ... entity display ... */}
                 <div className="flex items-center gap-3">
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center"
@@ -180,18 +166,18 @@ const BettingPanel: React.FC = () => {
                       )}
                     </div>
                     <div className="text-xs text-gray-400">
-                      Score: {entity.score}
+                      分数: {entity.score}
                     </div>
                   </div>
 
-                  {/* 显示从合约获取的赔率，如果可用 */}
                   <div className="text-amber-400 font-medium">
                     {selectedEntityId === entity.id && displayedOdds !== null ? (
                       `${displayedOdds.toFixed(2)}x`
+                    ) : selectedEntityId === entity.id && loading ? (
+                      '加载中...'
                     ) : (
-                      // 如果赔率未加载，可以显示本地计算的赔率作为加载或备用，或者显示加载状态
-                      // 这里暂时显示本地计算的赔率作为备用
-                      `${(1 + (10 / (entity.score + 1))).toFixed(2)}x`
+                      // 可以显示一个默认文本或不显示赔率直到加载完成
+                      '-.--x'
                     )}
                   </div>
                 </div>
@@ -200,8 +186,10 @@ const BettingPanel: React.FC = () => {
           </div>
         </div>
 
+        {/* ... bet amount selection ... */}
         <div className="mb-4">
-          <h3 className="text-sm font-medium text-gray-300 mb-2">Bet Amount (SUI)</h3>
+          <h3 className="text-sm font-medium text-gray-300 mb-2">下注金额 (SUI)</h3>
+          {/* ... amount buttons and slider ... */}
           <div className="flex gap-2">
             {[0.1, 0.5, 1, 5].map(amount => (
               <button
@@ -222,7 +210,7 @@ const BettingPanel: React.FC = () => {
             <input
               type="range"
               min="0.1"
-              max="10"
+              max={Math.max(10, balance > 0 ? Math.floor(balance) : 10)} // 动态调整最大值
               step="0.1"
               value={betAmount}
               onChange={(e) => setBetAmount(parseFloat(e.target.value))}
@@ -230,76 +218,82 @@ const BettingPanel: React.FC = () => {
             />
             <div className="flex justify-between text-xs text-gray-400 mt-1">
               <span>0.1</span>
-              <span>10 SUI</span>
+              <span>{Math.max(10, balance > 0 ? Math.floor(balance) : 10)} SUI</span>
             </div>
           </div>
         </div>
 
-        {selectedEntityId && (
+
+        {/* ... potential winnings display ... */}
+         {selectedEntityId !== null && (
           <div className="mb-6 p-3 bg-gray-800 rounded border border-gray-700">
             <div className="flex justify-between text-sm mb-2">
-              <span className="text-gray-400">Your bet:</span>
-              <span>{betAmount} SUI</span>
+              <span className="text-gray-400">你的下注:</span>
+              <span>{betAmount.toFixed(1)} SUI</span>
             </div>
             <div className="flex justify-between text-sm mb-2">
-              <span className="text-gray-400">Odds:</span>
-              {/* 显示从合约获取的赔率 */}
-              <span>{displayedOdds !== null ? displayedOdds.toFixed(2) : 'Loading...'}x</span>
+              <span className="text-gray-400">赔率:</span>
+              <span>{displayedOdds !== null ? displayedOdds.toFixed(2) : (loading ? '加载中...' : 'N/A')}x</span>
             </div>
             <div className="flex justify-between font-medium">
-              <span className="text-gray-300">Potential win:</span>
+              <span className="text-gray-300">预计赢得:</span>
               <span className="text-green-400">
-                {/* 使用从合约获取的赔率计算潜在奖金 */}
-                {calculateWinnings(
-                  betAmount,
-                  displayedOdds || 1 // 如果赔率未加载，使用1作为默认值
-                ).toFixed(2)} SUI
+                {displayedOdds !== null ? calculateWinnings(betAmount, displayedOdds).toFixed(2) : '0.00'} SUI
               </span>
             </div>
           </div>
         )}
 
+        {/* ... bet button ... */}
         <button
           className={`w-full py-3 rounded-lg font-medium flex items-center justify-center gap-2 ${
-            walletConnected && selectedEntityId && betAmount > 0 && betAmount <= balance && !loading && displayedOdds !== null // 添加 !loading 和 displayedOdds !== null
+            walletConnected && selectedEntityId !== null && betAmount > 0 && betAmount <= balance && !loading && displayedOdds !== null && currentGameId
               ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:opacity-90'
               : 'bg-gray-700 cursor-not-allowed'
           }`}
           onClick={handleBet}
-          disabled={!walletConnected || !selectedEntityId || betAmount <= 0 || betAmount > balance || loading || displayedOdds === null} // 添加 loading 和 displayedOdds === null 到 disabled
+          disabled={!walletConnected || selectedEntityId === null || betAmount <= 0 || betAmount > balance || loading || displayedOdds === null || !currentGameId}
         >
+          {/* ... button content (loading/normal) ... */}
           {loading ? (
             <>
               <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              Processing...
+              处理中...
             </>
           ) : (
             <>
               <CreditCard size={18} />
-              Place Bet
+              确认下注
               <ArrowUpRight size={18} />
             </>
           )}
         </button>
 
+        {/* ... error/info messages ... */}
         {!walletConnected && (
           <div className="text-center text-red-400 text-sm mt-2">
-            Connect wallet to place bets
+            请连接钱包以进行下注
           </div>
         )}
         {walletConnected && betAmount > balance && (
           <div className="text-center text-red-400 text-sm mt-2">
-            Insufficient balance
+            余额不足
           </div>
         )}
-         {walletConnected && selectedEntityId && displayedOdds === null && !loading && (
+         {walletConnected && selectedEntityId !== null && displayedOdds === null && !loading && currentGameId && (
           <div className="text-center text-yellow-400 text-sm mt-2">
-            Fetching odds...
+            正在获取赔率...
           </div>
         )}
+        {!currentGameId && walletConnected && (
+            <div className="text-center text-yellow-400 text-sm mt-2">
+                请先选择一个游戏房间开始观战。
+            </div>
+        )}
+
       </div>
     </div>
   );

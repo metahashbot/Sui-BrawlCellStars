@@ -1,317 +1,151 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
-// Types
-type Entity = {
-  id: number;
+// 定义父级应用与 iframe 之间通信的消息类型
+type IframeMessage = {
+  action: string;
+  gameId?: string; // 添加 gameId 属性，可能存在
+  gameState?: GameState; // 添加 gameState 属性
+  [key: string]: any; // 允许其他属性
+};
+
+// 定义实体类型 (与 BettingPanel.tsx 中的期望结构对齐)
+export interface Entity {
+  id: number; // 在 BettingPanel 中，这个 id 最终需要映射到合约的 player_id (1-8)
   name: string;
-  x: number;
-  y: number;
-  radius: number;
-  mass: number;
+  color: string;
   score: number;
-  color: string;
-};
+  // isAI 属性将在 GameContext 中根据来源（players/aiAgents）设置，或由 iframe 直接提供
+}
 
-type Player = Entity;
+export interface Player extends Entity {
+  // Player 特有属性 (如果需要)
+}
 
-type AIAgent = Entity;
+export interface AIAgent extends Entity {
+  // AI Agent 特有属性 (如果需要)
+}
 
-type Resource = {
-  id: number;
-  x: number;
-  y: number;
-  radius: number;
-  mass: number;
-  color: string;
-};
-
-type GameState = {
+// 定义游戏状态类型
+export type GameState = {
   players: Player[];
   aiAgents: AIAgent[];
-  resources: Resource[];
-  isGameActive: boolean;
 };
 
-type PlayerState = Entity & {
-  isDead: boolean;
-  sprintCooldown: number;
-};
-
+// 定义 Context 的类型
 type GameContextType = {
-  gameState: GameState;
-  playerState: PlayerState;
-  startGame: () => void;
-  endGame: () => void;
-  movePlayer: (dirX: number, dirY: number) => void;
-  sprintPlayer: (isSprinting: boolean) => void;
+  // 用于设置 iframe 的 window 引用
+  setIframeWindow: (iframeWindow: Window | null) => void;
+  // 发送观战指令给 iframe (用于显示房间列表)
+  sendSpectateCommand: () => void;
+  // 存储从 iframe 接收到的观战游戏ID (成功加入后)
+  spectateGameId: string | null;
+  gameState: GameState; // 添加 gameState
+  // 其他可能需要共享的状态或方法...
 };
 
-// Initial states
-const initialGameState: GameState = {
-  players: [],
-  aiAgents: [],
-  resources: [],
-  isGameActive: false,
+// 初始状态
+const initialContextState: GameContextType = {
+  setIframeWindow: () => {},
+  sendSpectateCommand: () => {},
+  spectateGameId: null,
+  gameState: { players: [], aiAgents: [] }, // 初始化 gameState
 };
 
-const initialPlayerState: PlayerState = {
-  id: 0,
-  name: 'Player',
-  x: 0,
-  y: 0,
-  radius: 20,
-  mass: 10,
-  score: 0,
-  color: '#818cf8',
-  isDead: false,
-  sprintCooldown: 100,
-};
+// 创建 Context
+const GameContext = createContext<GameContextType>(initialContextState);
 
-// Create context
-const GameContext = createContext<GameContextType>({
-  gameState: initialGameState,
-  playerState: initialPlayerState,
-  startGame: () => {},
-  endGame: () => {},
-  movePlayer: () => {},
-  sprintPlayer: () => {},
-});
-
-// Random colors
-const playerColors = ['#818cf8', '#38bdf8', '#a78bfa', '#60a5fa', '#34d399'];
-const aiColors = ['#fb7185', '#f472b6', '#e879f9', '#f87171', '#fbbf24'];
-const resourceColors = ['#4ade80', '#34d399', '#2dd4bf', '#facc15', '#a3e635'];
-
-// Provider component
+// Provider 组件
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [gameState, setGameState] = useState<GameState>(initialGameState);
-  const [playerState, setPlayerState] = useState<PlayerState>(initialPlayerState);
-  
-  // Generate random position within arena
-  const getRandomPosition = useCallback(() => {
-    const radius = 4500; // Arena radius
-    const angle = Math.random() * Math.PI * 2; // Random angle
-    const distance = Math.random() * radius; // Random distance from center
-    
-    return {
-      x: 5000 + Math.cos(angle) * distance, // Center x + offset
-      y: 5000 + Math.sin(angle) * distance, // Center y + offset
-    };
-  }, []);
-  
-  // Initialize game
-  const startGame = useCallback(() => {
-    // Create players
-    const players: Player[] = Array.from({ length: 4 }, (_, i) => {
-      const position = getRandomPosition();
-      return {
-        id: i + 1,
-        name: `Player ${i + 1}`,
-        x: position.x,
-        y: position.y,
-        radius: 20,
-        mass: 10,
-        score: 0,
-        color: playerColors[i % playerColors.length],
-      };
-    });
-    
-    // Create AI agents
-    const aiAgents: AIAgent[] = Array.from({ length: 5 }, (_, i) => {
-      const position = getRandomPosition();
-      return {
-        id: i + 100,
-        name: `AI-${i + 1}`,
-        x: position.x,
-        y: position.y,
-        radius: 20,
-        mass: 10,
-        score: 0,
-        color: aiColors[i % aiColors.length],
-      };
-    });
-    
-    // Create resources
-    const resources: Resource[] = Array.from({ length: 200 }, (_, i) => {
-      const position = getRandomPosition();
-      return {
-        id: i + 1000,
-        x: position.x,
-        y: position.y,
-        radius: 5,
-        mass: 1,
-        color: resourceColors[i % resourceColors.length],
-      };
-    });
-    
-    // Create larger resource clusters
-    const largeResources: Resource[] = Array.from({ length: 10 }, (_, i) => {
-      const position = getRandomPosition();
-      return {
-        id: i + 2000,
-        x: position.x,
-        y: position.y,
-        radius: 15,
-        mass: 10,
-        color: resourceColors[(i + 2) % resourceColors.length],
-      };
-    });
-    
-    // Initialize player
-    const playerPosition = getRandomPosition();
-    setPlayerState({
-      ...initialPlayerState,
-      id: 999,
-      x: playerPosition.x,
-      y: playerPosition.y,
-      color: playerColors[Math.floor(Math.random() * playerColors.length)],
-    });
-    
-    // Set game state
-    setGameState({
-      players,
-      aiAgents,
-      resources: [...resources, ...largeResources],
-      isGameActive: true,
-    });
-  }, [getRandomPosition]);
-  
-  // End game
-  const endGame = useCallback(() => {
-    setGameState({
-      ...initialGameState,
-      isGameActive: false,
-    });
-    setPlayerState({
-      ...initialPlayerState,
-      isDead: true,
-    });
-  }, []);
-  
-  // Move player
-  const movePlayer = useCallback((dirX: number, dirY: number) => {
-    if (!gameState.isGameActive || playerState.isDead) return;
-    
-    setPlayerState(prev => {
-      // Calculate speed based on mass (larger = slower)
-      const speed = 5 * (1 / Math.sqrt(prev.mass));
-      
-      return {
-        ...prev,
-        x: prev.x + dirX * speed,
-        y: prev.y + dirY * speed,
-      };
-    });
-  }, [gameState.isGameActive, playerState.isDead]);
-  
-  // Sprint player
-  const sprintPlayer = useCallback((isSprinting: boolean) => {
-    if (!gameState.isGameActive || playerState.isDead || playerState.sprintCooldown < 100) return;
-    
-    if (isSprinting) {
-      // Start sprint - reduce cooldown
-      setPlayerState(prev => ({
-        ...prev,
-        sprintCooldown: 0,
-      }));
+  // 存储 iframe 的 window 引用
+  const [iframeWindow, setIframeWindow] = useState<Window | null>(null);
+  // 存储从 iframe 接收到的观战游戏ID (成功加入后)
+  const [spectateGameId, setSpectateGameId] = useState<string | null>(null);
+  // 存储从 iframe 接收到的用户选择的房间ID (用于触发发送 start_spectating)
+  const [selectedSpectateRoomId, setSelectedSpectateRoomId] = useState<string | null>(null);
+  const [gameState, setGameState] = useState<GameState>(initialContextState.gameState); // 添加 gameState 状态
+
+  // 发送消息给 iframe
+  const sendMessageToIframe = useCallback((message: IframeMessage) => {
+    if (iframeWindow) {
+      // 使用 '*' 作为 targetOrigin 是不安全的，实际应用中应指定 iframe 的确切源
+      // 示例：const targetOrigin = 'http://localhost:3000';
+      iframeWindow.postMessage(message, '*');
+      console.log('Sent message to iframe:', message);
+    } else {
+      console.warn('Iframe window not available to send message:', message);
     }
-  }, [gameState.isGameActive, playerState.isDead, playerState.sprintCooldown]);
-  
-  // Game loop
+  }, [iframeWindow]);
+
+  // 发送观战指令 (用于显示房间列表)
+  const sendSpectateCommand = useCallback(() => {
+    sendMessageToIframe({ action: 'spectate' });
+  }, [sendMessageToIframe]);
+
+  // 监听来自 iframe 的消息
   useEffect(() => {
-    if (!gameState.isGameActive) return;
-    
-    const gameLoop = setInterval(() => {
-      // Update AI movement
-      setGameState(prev => {
-        const updatedAI = prev.aiAgents.map(agent => {
-          // Simple AI behavior - move randomly
-          const angle = Math.random() * Math.PI * 2;
-          const speed = 2 * (1 / Math.sqrt(agent.mass));
-          
-          return {
-            ...agent,
-            x: agent.x + Math.cos(angle) * speed,
-            y: agent.y + Math.sin(angle) * speed,
-          };
-        });
-        
-        return {
-          ...prev,
-          aiAgents: updatedAI,
-        };
-      });
-      
-      // Update sprint cooldown
-      setPlayerState(prev => ({
-        ...prev,
-        sprintCooldown: Math.min(100, prev.sprintCooldown + 0.5),
-      }));
-      
-      // Check for resource consumption
-      setGameState(prev => {
-        if (playerState.isDead) return prev;
-        
-        let updatedResources = [...prev.resources];
-        let updatedPlayerState = { ...playerState };
-        
-        // Check if player consumes resources
-        updatedResources = updatedResources.filter(resource => {
-          const dx = playerState.x - resource.x;
-          const dy = playerState.y - resource.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          
-          if (distance < playerState.radius) {
-            // Player consumes resource
-            updatedPlayerState.mass += resource.mass;
-            updatedPlayerState.score += resource.mass;
-            updatedPlayerState.radius = Math.sqrt(updatedPlayerState.mass) * 6;
-            return false;
-          }
-          
-          return true;
-        });
-        
-        // Update player state
-        setPlayerState(updatedPlayerState);
-        
-        // Respawn resources if too few
-        if (updatedResources.length < 150) {
-          const newResourcesCount = 10;
-          const newResources = Array.from({ length: newResourcesCount }, (_, i) => {
-            const position = getRandomPosition();
-            return {
-              id: prev.resources.length + i + 3000,
-              x: position.x,
-              y: position.y,
-              radius: 5,
-              mass: 1,
-              color: resourceColors[i % resourceColors.length],
-            };
-          });
-          
-          updatedResources = [...updatedResources, ...newResources];
+    const handleMessage = (event: MessageEvent) => {
+      // 确保消息来自预期的源，这里简化为不检查源
+      // if (event.origin !== 'http://localhost:3000') return; // 示例：检查源
+
+      const message: IframeMessage = event.data;
+      console.log('Received message from iframe:', message);
+
+      // 根据消息类型处理
+      if (message.action === 'back_to_home') {
+        // 收到返回主页指令，可以在这里触发导航
+        // 注意：导航通常在 GamePage.tsx 中处理，这里仅作示例
+        console.log('Received back_to_home from iframe');
+        // 如果需要在 Context 中处理导航，需要将 navigate 函数传递进来或使用其他方式
+      } else if (message.action === 'select_spectate_room') {
+        // 收到用户选择观战房间的消息
+        if (message.gameId) {
+          console.log('Received select_spectate_room from iframe, gameId:', message.gameId);
+          // 更新状态，这将触发下面的 useEffect 发送 start_spectating 指令
+          setSelectedSpectateRoomId(message.gameId);
         }
-        
-        return {
-          ...prev,
-          resources: updatedResources,
-        };
-      });
-    }, 50);
-    
-    return () => clearInterval(gameLoop);
-  }, [gameState.isGameActive, playerState, getRandomPosition]);
-  
+      } else if (message.action === 'spectate_joined') {
+        // 收到观战成功加入房间的消息
+        if (message.gameId) {
+          console.log('Received spectate_joined from iframe, gameId:', message.gameId);
+          // 更新观战游戏ID状态
+          setSpectateGameId(message.gameId);
+        }
+      } else if (message.action === 'game_state_update') { // 新增：处理游戏状态更新
+        if (message.gameState) {
+          console.log('Received game_state_update from iframe:', message.gameState);
+          setGameState(message.gameState);
+        }
+      }
+      // 可以添加更多消息处理逻辑
+    };
+
+    // 添加消息监听器
+    window.addEventListener('message', handleMessage);
+
+    // 清理监听器
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, []); // 依赖项为空数组，只在组件挂载和卸载时执行
+
+  // 当 selectedSpectateRoomId 状态改变时，发送 start_spectating 指令给 iframe
+  useEffect(() => {
+    if (selectedSpectateRoomId && iframeWindow) {
+      console.log('Sending start_spectating to iframe for gameId:', selectedSpectateRoomId);
+      sendMessageToIframe({ action: 'start_spectating', gameId: selectedSpectateRoomId });
+      // 发送后清除 selectedSpectateRoomId，避免重复发送
+      setSelectedSpectateRoomId(null);
+    }
+  }, [selectedSpectateRoomId, iframeWindow, sendMessageToIframe]);
+
+
   const contextValue: GameContextType = {
-    gameState,
-    playerState,
-    startGame,
-    endGame,
-    movePlayer,
-    sprintPlayer,
+    setIframeWindow,
+    sendSpectateCommand,
+    spectateGameId,
+    gameState, // 提供 gameState
   };
-  
+
   return (
     <GameContext.Provider value={contextValue}>
       {children}

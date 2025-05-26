@@ -3,13 +3,13 @@ import {
   useCurrentAccount,
   useConnectWallet,
   useDisconnectWallet,
-  useSignAndExecuteTransaction, 
+  useSignAndExecuteTransaction,
 } from '@mysten/dapp-kit';
 import { useSuiClient } from '@mysten/dapp-kit';
 import { useWallets } from '@mysten/dapp-kit';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react'; // 引入 useCallback
 import { SuiTransactionBlock } from '@mysten/sui.js/client';
-import { SuiClient } from '@mysten/sui/client'; // 尝试从 @mysten/sui 导入 SuiClient
+import { SuiClient } from '@mysten/sui/client';
 
 // Wallet context type
 export type WalletContextType = {
@@ -20,9 +20,9 @@ export type WalletContextType = {
   connectWallet: () => Promise<void>;
   disconnectWallet: () => void;
   address: string | null;
-  // 将属性名从 signAndExecuteTransaction 更改为 signAndExecuteTransactionBlock
   signAndExecuteTransactionBlock: ((txb: SuiTransactionBlock) => Promise<any>) | undefined;
-  suiClient: SuiClient | undefined; // 添加 suiClient 类型
+  suiClient: SuiClient | undefined;
+  getPrimaryCoinObjectId: () => Promise<string | null>; // 添加 getPrimaryCoinObjectId 类型
 };
 
 const initialState: WalletContextType = {
@@ -32,30 +32,22 @@ const initialState: WalletContextType = {
   balance: 0,
   connectWallet: async () => {},
   disconnectWallet: () => {},
-  address: null, // 添加 address 初始值
-  // 将属性名从 signAndExecuteTransaction 更改为 signAndExecuteTransactionBlock
-  signAndExecuteTransactionBlock: undefined, // 添加 signAndExecuteTransaction初始值
-  suiClient: undefined, // 添加 suiClient 初始值
+  address: null,
+  signAndExecuteTransactionBlock: undefined,
+  suiClient: undefined,
+  getPrimaryCoinObjectId: async () => null, // 添加 getPrimaryCoinObjectId 初始值
 };
 
 const WalletContext = createContext<WalletContextType>(initialState);
 
 export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Get current account
   const account = useCurrentAccount();
-  // Wallet connection hook
   const { mutateAsync: connect, isPending: connecting } = useConnectWallet();
-  // Wallet disconnection hook
   const { mutate: disconnect } = useDisconnectWallet();
-  // Get SUI client
   const suiClient = useSuiClient();
-  // Get signAndExecuteTransaction hook
-  // 这里获取的 hook 名称是 mutateAsync，我们将其别名为 signAndExecuteTransactionBlock
   const { mutateAsync: signAndExecuteTransactionBlock } = useSignAndExecuteTransaction();
-  // State management
   const [balance, setBalance] = useState(0);
 
-  // Get wallet balance
   useEffect(() => {
     const fetchBalance = async () => {
       if (account?.address) {
@@ -86,7 +78,6 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const wallets = useWallets();
 
-  // Connect wallet
   const connectWallet = async () => {
     try {
       const wallet = wallets[0];
@@ -100,7 +91,6 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
   
-  // Disconnect wallet
   const disconnectWallet = () => {
     try {
       disconnect();
@@ -109,6 +99,34 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       console.error('Failed to disconnect wallet:', error);
     }
   };
+
+  // Function to get a primary SUI coin object ID for transactions
+  const getPrimaryCoinObjectId = useCallback(async (): Promise<string | null> => {
+    if (!account?.address || !suiClient) {
+      console.warn('WalletContext: Cannot get primary coin object ID. Wallet not connected or suiClient not available.');
+      return null;
+    }
+    try {
+      // Fetch SUI coin objects for the current account
+      // We'll take the first one for simplicity, assuming it can be used for gas.
+      // For more complex scenarios, you might want to find a coin with sufficient balance.
+      const coinsResponse = await suiClient.getCoins({
+        owner: account.address,
+        coinType: '0x2::sui::SUI', // Standard SUI coin type
+        limit: 1, // We only need one coin object ID
+      });
+
+      if (coinsResponse.data.length > 0) {
+        return coinsResponse.data[0].coinObjectId;
+      } else {
+        console.warn('WalletContext: No SUI coin objects found for the connected wallet.');
+        return null;
+      }
+    } catch (error) {
+      console.error('WalletContext: Error fetching primary coin object ID:', error);
+      return null;
+    }
+  }, [account?.address, suiClient]); // Dependencies for useCallback
 
   return (
     <WalletContext.Provider
@@ -119,10 +137,10 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         balance,
         connectWallet,
         disconnectWallet,
-        address: account?.address || null, // 提供 address
-        // 提供 signAndExecuteTransactionBlock
+        address: account?.address || null,
         signAndExecuteTransactionBlock: signAndExecuteTransactionBlock as any,
-        suiClient: suiClient as SuiClient, // 提供 suiClient 并断言类型以解决类型错误
+        suiClient: suiClient as SuiClient,
+        getPrimaryCoinObjectId, // 提供 getPrimaryCoinObjectId 函数
       }}
     >
       {children}
